@@ -1,0 +1,8 @@
+﻿services:
+  jirani:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
