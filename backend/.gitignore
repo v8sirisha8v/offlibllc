@@ -1,0 +1,44 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+
+# Runtime data
+data/
+logs/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Uploads - ignore contents but keep folder structure
+uploads/books/*
+uploads/covers/*
+uploads/vids/*
+!uploads/books/.gitkeep
+!uploads/covers/.gitkeep
+!uploads/vids/.gitkeep
