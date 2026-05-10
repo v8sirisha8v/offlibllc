@@ -19,8 +19,6 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     settings.COVER_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # Auto-seed roles on startup
     from app.database import SessionLocal
     from app.models.role import Role
     db = SessionLocal()
@@ -31,22 +29,27 @@ async def lifespan(app: FastAPI):
         db.commit()
     finally:
         db.close()
-    
     yield
     engine.dispose()
+
+app = FastAPI(title="Jirani Offline Library Backend", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 os.makedirs(settings.UPLOAD_DIR / "covers", exist_ok=True)
 app.mount("/static/covers", StaticFiles(directory=str(settings.COVER_DIR)), name="covers")
 
-# API routes first
 app.include_router(auth_router.router)
 app.include_router(book_router.router)
 app.include_router(video_router.router)
 app.include_router(tag_router.router)
 app.include_router(audio_router.router)
 
-
-# Serve React frontend — must be LAST
 if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 
@@ -55,4 +58,6 @@ if FRONTEND_DIST.exists():
         file = FRONTEND_DIST / full_path
         if file.exists() and file.is_file():
             return FileResponse(file)
-        return FileResponse(FRONTEND_DIST / "index.html")  # SPA fallback
+        return FileResponse(FRONTEND_DIST / "index.html")
+else:
+    print(f"WARNING: Frontend not found at {FRONTEND_DIST}")
