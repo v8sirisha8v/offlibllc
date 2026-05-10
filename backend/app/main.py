@@ -19,20 +19,21 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     settings.COVER_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Auto-seed roles on startup
+    from app.database import SessionLocal
+    from app.models.role import Role
+    db = SessionLocal()
+    try:
+        for name in ["admin", "teacher", "student"]:
+            if not db.query(Role).filter(Role.name == name).first():
+                db.add(Role(name=name))
+        db.commit()
+    finally:
+        db.close()
+    
     yield
     engine.dispose()
-
-app = FastAPI(
-    title="Jirani Offline Library Backend",
-    lifespan=lifespan
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 os.makedirs(settings.UPLOAD_DIR / "covers", exist_ok=True)
 app.mount("/static/covers", StaticFiles(directory=str(settings.COVER_DIR)), name="covers")
