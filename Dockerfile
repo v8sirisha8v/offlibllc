@@ -1,16 +1,31 @@
-﻿FROM node:20-slim AS frontend-builder
-WORKDIR /app/frontend
+﻿FROM node:20-slim AS frontend-build
+
+WORKDIR /frontend
+
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci
+
 COPY frontend/ ./
 RUN npm run build
 
 FROM python:3.11-slim
-WORKDIR /app/backend
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+  PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends build-essential \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /app/uploads/books /app/uploads/covers
+
 COPY backend/requirements.txt ./
-RUN pip install -r requirements.txt
-COPY backend/ ./
-COPY --from=frontend-builder /app/frontend/dist ../frontend/dist
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/app ./app
+COPY --from=frontend-build /frontend/dist /app/frontend/dist
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
