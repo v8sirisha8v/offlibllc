@@ -5,6 +5,7 @@ from typing import Set
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
+    BASE_DIR: Path = BASE_DIR
     # App metadata
     APP_NAME: str = "Jirani Offline Library"
     APP_VERSION: str = "1.0.0"

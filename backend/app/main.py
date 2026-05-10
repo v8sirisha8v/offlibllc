@@ -6,10 +6,9 @@ from app.database import engine, Base
 from app.api import auth_router, book_router, video_router, tag_router, audio_router
 from app import settings
 from fastapi.middleware.cors import CORSMiddleware
-import os
 from pathlib import Path
 
-FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+FRONTEND_DIST = settings.BASE_DIR / "frontend" / "dist"
 
 print(f"Looking for frontend at: {FRONTEND_DIST}")
 print(f"Exists: {FRONTEND_DIST.exists()}")
@@ -17,6 +16,10 @@ print(f"Exists: {FRONTEND_DIST.exists()}")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    upload_root = settings.UPLOAD_DIR.parent
+    cover_root = settings.COVER_DIR.parent
+    upload_root.mkdir(parents=True, exist_ok=True)
+    cover_root.mkdir(parents=True, exist_ok=True)
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     settings.COVER_DIR.mkdir(parents=True, exist_ok=True)
     from app.database import SessionLocal
@@ -41,7 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs(settings.UPLOAD_DIR / "covers", exist_ok=True)
+upload_root = settings.UPLOAD_DIR.parent
+cover_root = settings.COVER_DIR.parent
+upload_root.mkdir(parents=True, exist_ok=True)
+cover_root.mkdir(parents=True, exist_ok=True)
+settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+settings.COVER_DIR.mkdir(parents=True, exist_ok=True)
+
 app.mount("/static/covers", StaticFiles(directory=str(settings.COVER_DIR)), name="covers")
 
 app.include_router(auth_router.router)
