@@ -2,28 +2,24 @@
 FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
-
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
 # Build backend
 FROM python:3.11-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends build-essential \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /app/uploads/books /app/uploads/covers
-
+WORKDIR /app/backend
 COPY backend/requirements.txt ./
 RUN pip install -r requirements.txt
 COPY backend/ ./
+
+# Create upload directories
+RUN mkdir -p /app/backend/uploads/covers
+RUN mkdir -p /app/backend/uploads/books
+RUN mkdir -p /app/uploads/audio
+RUN mkdir -p /app/uploads/vids
+
+# Copy built frontend
 COPY --from=frontend-builder /app/frontend/dist ../frontend/dist
 
 EXPOSE 8000
