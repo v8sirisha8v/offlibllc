@@ -142,9 +142,9 @@ const AddAdminModal = ({ onClose }) => {
               <p style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 11, color: "#A09890", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", fontWeight: 600 }}>Recovery Code</p>
               <div style={{ fontFamily: "monospace", fontSize: 28, fontWeight: 700, color: "#B8922A", letterSpacing: "0.25em" }}>{recoveryCode}</div>
             </div>
-            <div style={{ background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 10, padding: "12px 16px", textAlign: "left" }}>
-              <p style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 11, color: "#D94F3D", margin: 0, lineHeight: 1.6 }}>⚠ This code will not be shown again.</p>
-            </div>
+            <p style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 12, color: "#A09890", margin: 0, textAlign: "center", lineHeight: 1.6 }}>
+              Write this down somewhere safe — this code will not be shown again.
+            </p>
             <button onClick={onClose} style={{ padding: "13px 0", background: "#B8922A", color: "#fff", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'Satoshi', sans-serif" }}>Done</button>
           </div>
         ) : (
@@ -198,7 +198,7 @@ const AddAdminModal = ({ onClose }) => {
                   <p style={{ fontSize: 11, color: "#D94F3D", margin: "4px 0 0", fontFamily: "'Satoshi', sans-serif" }}>{15 - formData.password.length} more characters needed</p>
                 )}
               </div>
-              {error && <div style={{ padding: "10px 14px", background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 10, fontSize: 12, color: "#D94F3D", fontFamily: "'Satoshi', sans-serif" }}>{error}</div>}
+              {error && <p style={{ margin: 0, fontSize: 12, color: "#A09890", fontFamily: "'Satoshi', sans-serif", textAlign: "center" }}>{error}</p>}
               <button onClick={handleCreate} disabled={loading || !isValid}
                 style={{ padding: "13px 0", background: loading || !isValid ? "#E8E4DE" : "#B8922A", color: loading || !isValid ? "#A09890" : "#fff", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: loading || !isValid ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Satoshi', sans-serif" }}>
                 {loading ? <><Loader2 size={14} className="spin" /> Creating...</> : <><UserPlus size={14} /> Create Admin Account</>}
@@ -322,7 +322,7 @@ const UploadModal = ({ onClose, onSuccess, type }) => {
             />
           </div>
 
-          {error && <div style={{ padding: "10px 14px", background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 10, fontFamily: "'Satoshi', sans-serif", fontSize: 12, color: "#D94F3D" }}>{error}</div>}
+          {error && <p style={{ margin: 0, fontSize: 12, color: "#A09890", fontFamily: "'Satoshi', sans-serif", textAlign: "center" }}>{error}</p>}
 
           <button onClick={upload} disabled={loading || files.length === 0}
             style={{ padding: "13px 0", background: files.length === 0 || loading ? "#E8E4DE" : "#B8922A", color: files.length === 0 || loading ? "#A09890" : "#fff", border: "none", borderRadius: 12, fontFamily: "'Satoshi', sans-serif", fontSize: 14, fontWeight: 600, cursor: files.length === 0 || loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -374,7 +374,7 @@ const BookEditModal = ({ book, onClose, onUpdate }) => {
             <label style={labelStyle}>Tags (comma separated)</label>
             <input value={tags} onChange={e => setTags(e.target.value)} placeholder="history, science, fiction..." style={inputStyle} />
           </div>
-          {error && <div style={{ padding: "10px 14px", background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 10, fontFamily: "'Satoshi', sans-serif", fontSize: 12, color: "#D94F3D" }}>{error}</div>}
+          {error && <p style={{ margin: 0, fontSize: 12, color: "#A09890", fontFamily: "'Satoshi', sans-serif", textAlign: "center" }}>{error}</p>}
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={save} disabled={saving}
               style={{ flex: 1, padding: "12px 0", background: saving ? "#E8E4DE" : "#B8922A", color: saving ? "#A09890" : "#fff", border: "none", borderRadius: 10, fontFamily: "'Satoshi', sans-serif", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -791,12 +791,17 @@ const Library = () => {
           {tabs.map(({ id, label, icon: Icon, count }) => (
             <button key={id}
               onClick={() => { setActiveTab(id); setSelectedBookTags([]); setSelectedVideoTags([]); setSelectedAudioTags([]); setSearch(""); }}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 2 : 10, padding: isMobile ? "8px 0" : "10px 12px", borderRadius: 10, border: "none", background: activeTab === id ? "#F5EDD8" : "transparent", color: activeTab === id ? "#B8922A" : "#6B6560", cursor: "pointer", marginBottom: 2, fontFamily: "'Satoshi', sans-serif", fontSize: 13, fontWeight: activeTab === id ? 700 : 400, transition: "all 0.15s" }}>
-              <Icon size={isMobile ? 20 : 15} />
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "space-between", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 2 : 8, padding: isMobile ? "8px 0" : "9px 12px", borderRadius: 10, border: "none", background: activeTab === id ? "#F5EDD8" : "transparent", color: activeTab === id ? "#B8922A" : "#6B6560", cursor: "pointer", marginBottom: 2, fontFamily: "'Satoshi', sans-serif", fontSize: 13, fontWeight: activeTab === id ? 700 : 400, transition: "all 0.15s" }}>
               {isMobile
-                ? <span style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 9, color: activeTab === id ? "#B8922A" : "#A09890", fontWeight: 600 }}>{count}</span>
+                ? <>
+                    <Icon size={20} />
+                    <span style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 9, color: activeTab === id ? "#B8922A" : "#A09890", fontWeight: 600 }}>{count}</span>
+                  </>
                 : <>
-                    <span style={{ flex: 1 }}>{label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Icon size={15} />
+                      <span>{label}</span>
+                    </div>
                     <span style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 11, padding: "1px 8px", borderRadius: 20, background: activeTab === id ? "#B8922A" : "#F0EDE8", color: activeTab === id ? "#fff" : "#A09890", fontWeight: 600 }}>
                       {count}
                     </span>
@@ -855,7 +860,8 @@ const Library = () => {
                 placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ background: "transparent", border: "none", outline: "none", fontFamily: "'Satoshi', sans-serif", fontSize: 13, color: "#1C1A17", WebkitTextFillColor: "#1C1A17", width: "100%", minWidth: 0, padding: 0, appearance: "none" }}
+                className="search-input"
+                style={{ border: "none", outline: "none", fontFamily: "'Satoshi', sans-serif", fontSize: 13, color: "#1C1A17", WebkitTextFillColor: "#1C1A17", width: "100%", minWidth: 0, padding: 0, appearance: "none" }}
               />
             </div>
 
@@ -955,10 +961,10 @@ const Library = () => {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
         * { box-sizing: border-box; }
-        input { -webkit-text-fill-color: #1C1A17 !important; background-color: #ffffff !important; }
-        input[placeholder] { -webkit-text-fill-color: #A09890 !important; }
-        input:not(:placeholder-shown), input:focus { -webkit-text-fill-color: #1C1A17 !important; }
+        input:not(.search-input) { -webkit-text-fill-color: #1C1A17 !important; background-color: #ffffff !important; }
+        .search-input { -webkit-text-fill-color: #1C1A17 !important; background-color: transparent !important; }
         input::placeholder { color: #A09890 !important; -webkit-text-fill-color: #A09890 !important; opacity: 1; }
+        input:not(:placeholder-shown), input:focus { -webkit-text-fill-color: #1C1A17 !important; }
         button { transition: all 0.15s ease; }
       `}</style>
     </div>

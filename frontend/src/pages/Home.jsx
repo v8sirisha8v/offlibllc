@@ -182,9 +182,9 @@ const Home = () => {
               </div>
 
               {error && (
-                <div style={{ padding: "10px 14px", background: error.includes("reset") || error.includes("created") ? "#F0FAF4" : "#FEF2F0", border: `1px solid ${error.includes("reset") || error.includes("created") ? "#B7E4C7" : "#FADADD"}`, borderRadius: 10, fontSize: 12, color: error.includes("reset") || error.includes("created") ? "#2D7A4F" : "#D94F3D", fontFamily: "'Satoshi', sans-serif" }}>
+                <p style={{ margin: 0, fontSize: 12, fontFamily: "'Satoshi', sans-serif", color: error.includes("reset") || error.includes("created") ? "#B8922A" : "#A09890", textAlign: "center" }}>
                   {error}
-                </div>
+                </p>
               )}
 
               <button type="submit" disabled={loading}
@@ -225,9 +225,9 @@ const Home = () => {
                     </p>
                   )}
                   {forgotError && (
-                    <div style={{ padding: "8px 12px", background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 8, fontSize: 12, color: "#D94F3D", fontFamily: "'Satoshi', sans-serif" }}>
+                    <p style={{ margin: 0, fontSize: 12, color: "#A09890", fontFamily: "'Satoshi', sans-serif", textAlign: "center" }}>
                       {forgotError}
-                    </div>
+                    </p>
                   )}
                   <button type="button" onClick={verifyCode} disabled={forgotLoading || !forgotValid}
                     style={{ padding: "11px 0", background: forgotLoading || !forgotValid ? "#E8E4DE" : "#B8922A", color: forgotLoading || !forgotValid ? "#A09890" : "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: forgotLoading || !forgotValid ? "not-allowed" : "pointer", fontFamily: "'Satoshi', sans-serif" }}>
@@ -290,12 +290,9 @@ const Home = () => {
                     {recoveryCode}
                   </div>
                 </div>
-                <div style={{ background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 10, padding: "12px 16px", textAlign: "left" }}>
-                  <p style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 11, color: "#D94F3D", margin: 0, lineHeight: 1.6 }}>
-                    ⚠ Write this down somewhere safe.<br />
-                    This code will not be shown again.
-                  </p>
-                </div>
+                <p style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 12, color: "#A09890", margin: 0, textAlign: "center", lineHeight: 1.6 }}>
+                  Write this down somewhere safe — this code will not be shown again.
+                </p>
                 <button
                   onClick={() => {
                     setShowSignup(false);
@@ -353,9 +350,9 @@ const Home = () => {
                     )}
                   </div>
                   {signupError && (
-                    <div style={{ padding: "10px 14px", background: "#FEF2F0", border: "1px solid #FADADD", borderRadius: 10, fontSize: 12, color: "#D94F3D", fontFamily: "'Satoshi', sans-serif" }}>
+                    <p style={{ margin: 0, fontSize: 12, color: "#A09890", fontFamily: "'Satoshi', sans-serif", textAlign: "center" }}>
                       {signupError}
-                    </div>
+                    </p>
                   )}
                   <button onClick={handleSignup} disabled={signupLoading || !signupValid}
                     style={{ padding: "13px 0", background: signupLoading || !signupValid ? "#E8E4DE" : "#B8922A", color: signupLoading || !signupValid ? "#A09890" : "#fff", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: signupLoading || !signupValid ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Satoshi', sans-serif" }}>
