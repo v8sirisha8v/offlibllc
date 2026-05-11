@@ -46,12 +46,12 @@ const ReadBook = () => {
     return () => { cancelled = true }
   }, [uid])
 
+  
   // Render whenever page or scale changes
   useEffect(() => {
     if (!pdfRef.current || loading) return
 
     const render = async () => {
-      // Cancel any in-progress render
       if (renderTaskRef.current) {
         await renderTaskRef.current.cancel().catch(() => {})
         renderTaskRef.current = null
@@ -60,14 +60,23 @@ const ReadBook = () => {
       setRendering(true)
       try {
         const page = await pdfRef.current.getPage(currentPage)
-        const viewport = page.getViewport({ scale })
+
+        // Fit to screen width for mobile
+        const screenWidth = window.innerWidth - 32
+        const baseViewport = page.getViewport({ scale: 1 })
+        const fitScale = screenWidth / baseViewport.width
+        const finalScale = scale * fitScale
+
+        const viewport = page.getViewport({ scale: finalScale })
         const canvas = canvasRef.current
         if (!canvas) return
 
         canvas.width = viewport.width
         canvas.height = viewport.height
-        const ctx = canvas.getContext('2d')
+        canvas.style.width = viewport.width + 'px'
+        canvas.style.height = viewport.height + 'px'
 
+        const ctx = canvas.getContext('2d')
         const task = page.render({ canvasContext: ctx, viewport })
         renderTaskRef.current = task
         await task.promise
