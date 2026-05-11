@@ -82,7 +82,7 @@ const ReadBook = () => {
         await task.promise
       } catch (e) {
         if (e?.name !== 'RenderingCancelledException') {
-          setError('Failed to render page.')
+           setError(`Failed to render: ${e?.name} - ${e?.message}`)
         }
       } finally {
         renderTaskRef.current = null
