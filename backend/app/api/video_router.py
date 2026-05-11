@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, UploadFile, Form, Depends, HTTPException
+from fastapi import APIRouter, File, UploadFile, Form, Depends, Request, HTTPException
 from app.schemas.video_schema import Video_Create, Video_View
 from app.repositories.video_repo import Video_Repo
 from sqlalchemy.orm import Session, joinedload
@@ -114,21 +114,62 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
     return repo.delete_video(video_id)
 
 @router.get("/stream/{video_id}")
-def stream_video(video_id: int, db: Session = Depends(get_db)):
+def stream_video(video_id: int, request: Request, db: Session = Depends(get_db)):
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
+
+    file_path = Path(video.file_path)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    file_size = file_path.stat().st_size
     mime_type, _ = mimetypes.guess_type(video.file_path)
     if not mime_type:
-        mime_type = "application/octet-stream"
+        mime_type = "video/mp4"
 
-    def iterfile():
-        with open(video.file_path, "rb") as f:
-            while True:
-                chunk = f.read(1024 * 1024)
-                if not chunk:
-                    break
+    range_header = request.headers.get("Range")
+
+    if range_header:
+        range_val = range_header.replace("bytes=", "")
+        start_str, _, end_str = range_val.partition("-")
+        start = int(start_str)
+        end = int(end_str) if end_str else file_size - 1
+        end = min(end, file_size - 1)
+        length = end - start + 1
+
+        def iter_range():
+            with open(file_path, "rb") as f:
+                f.seek(start)
+                remaining = length
+                while remaining > 0:
+                    chunk = f.read(min(1024 * 256, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+
+        return StreamingResponse(
+            iter_range(),
+            status_code=206,
+            media_type=mime_type,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Content-Length": str(length),
+                "Accept-Ranges": "bytes",
+            }
+        )
+
+    def iter_full():
+        with open(file_path, "rb") as f:
+            while chunk := f.read(1024 * 256):
                 yield chunk
 
-    return StreamingResponse(iterfile(), media_type=mime_type)
+    return StreamingResponse(
+        iter_full(),
+        media_type=mime_type,
+        headers={
+            "Content-Length": str(file_size),
+            "Accept-Ranges": "bytes",
+        }
+    )
