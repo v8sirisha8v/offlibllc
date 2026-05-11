@@ -33,7 +33,7 @@ const TagDropdown = ({ allTags, selectedTags, onToggle, onClear }) => {
       <button onClick={() => setOpen(p => !p)}
         style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", background: selectedTags.length > 0 ? "#F5EDD8" : "#F7F5F2", border: selectedTags.length > 0 ? "1.5px solid #B8922A" : "1px solid #E8E4DE", borderRadius: 10, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: selectedTags.length > 0 ? "#B8922A" : "#6B6560", cursor: "pointer", whiteSpace: "nowrap" }}>
         <Tag size={13} />
-        {selectedTags.length > 0 ? `${selectedTags.length} tag${selectedTags.length > 1 ? "s" : ""}` : "Tags"}
+        {selectedTags.length > 0 ? `${selectedTags.length}` : ""}
         <span style={{ fontSize: 10, marginLeft: 2 }}>{open ? "▲" : "▼"}</span>
       </button>
 
@@ -659,6 +659,8 @@ const Library = () => {
   const { isAdmin, logout, auth } = useAuth();
   const navigate = useNavigate();
 
+  const isMobile = window.innerWidth < 640;
+
   const [activeTab, setActiveTab] = useState("books");
   const [books, setBooks] = useState([]);
   const [videos, setVideos] = useState([]);
@@ -694,23 +696,18 @@ const Library = () => {
   };
 
   const fetchTags = async () => {
-  try {
-    const res = await fetch(`${BOOKS_API}/search/`);
-    if (!res.ok) return;
-
-    const booksData = await res.json();
-
-    const uniqueBookTags = [
-      ...new Map(
-        booksData
-          .flatMap(book => book.tags || [])
-          .map(tag => [tag.name, tag])
-      ).values()
-    ];
-
-    setBookTagsList(uniqueBookTags);
-  } catch {}
-};
+    try {
+      const res = await fetch(`${BOOKS_API}/search/`);
+      if (!res.ok) return;
+      const booksData = await res.json();
+      const uniqueBookTags = [
+        ...new Map(
+          booksData.flatMap(book => book.tags || []).map(tag => [tag.name, tag])
+        ).values()
+      ];
+      setBookTagsList(uniqueBookTags);
+    } catch {}
+  };
 
   useEffect(() => {
     Promise.all([fetchBooks(), fetchVideos(), fetchAudio(), fetchTags()]).finally(() => setLoading(false));
@@ -744,44 +741,61 @@ const Library = () => {
     <div style={{ display: "flex", height: "100vh", background: "#fff", fontFamily: "'IBM Plex Sans', sans-serif", overflow: "hidden" }}>
 
       {/* ── SIDEBAR ── */}
-      <aside style={{ width: 220, flexShrink: 0, background: "#fff", borderRight: "1px solid #E8E4DE", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid #E8E4DE" }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 21, fontWeight: 700, color: "#1C1A17", margin: 0, letterSpacing: "-0.01em" }}>Jirani</h1>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#A09890", margin: "4px 0 0", textTransform: "uppercase", letterSpacing: "0.08em" }}>Offline Library</p>
+      <aside style={{ width: isMobile ? 58 : 220, flexShrink: 0, background: "#fff", borderRight: "1px solid #E8E4DE", display: "flex", flexDirection: "column" }}>
+
+        {/* Logo */}
+        <div style={{ padding: isMobile ? "14px 0" : "24px 20px 20px", borderBottom: "1px solid #E8E4DE", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start" }}>
+          {isMobile
+            ? <BookOpen size={20} color="#B8922A" />
+            : <div>
+                <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 21, fontWeight: 700, color: "#1C1A17", margin: 0, letterSpacing: "-0.01em" }}>Jirani</h1>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#A09890", margin: "4px 0 0", textTransform: "uppercase", letterSpacing: "0.08em" }}>Offline Library</p>
+              </div>
+          }
         </div>
 
-        <nav style={{ padding: "12px 10px" }}>
+        {/* Nav */}
+        <nav style={{ padding: isMobile ? "10px 6px" : "12px 10px" }}>
           {tabs.map(({ id, label, icon: Icon, count }) => (
-            <button key={id} onClick={() => { setActiveTab(id); setSelectedBookTags([]); setSelectedVideoTags([]); setSelectedAudioTags([]); setSearch(""); }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: "none", background: activeTab === id ? "#F5EDD8" : "transparent", color: activeTab === id ? "#B8922A" : "#6B6560", cursor: "pointer", marginBottom: 2, textAlign: "left", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: activeTab === id ? 600 : 400, transition: "all 0.15s" }}>
-              <Icon size={15} />
-              <span style={{ flex: 1 }}>{label}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "1px 8px", borderRadius: 20, background: activeTab === id ? "#B8922A" : "#F0EDE8", color: activeTab === id ? "#fff" : "#A09890" }}>
-                {count}
-              </span>
+            <button key={id}
+              onClick={() => { setActiveTab(id); setSelectedBookTags([]); setSelectedVideoTags([]); setSelectedAudioTags([]); setSearch(""); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 2 : 10, padding: isMobile ? "8px 0" : "10px 12px", borderRadius: 10, border: "none", background: activeTab === id ? "#F5EDD8" : "transparent", color: activeTab === id ? "#B8922A" : "#6B6560", cursor: "pointer", marginBottom: 2, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: activeTab === id ? 600 : 400, transition: "all 0.15s" }}>
+              <Icon size={isMobile ? 20 : 15} />
+              {isMobile
+                ? <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: activeTab === id ? "#B8922A" : "#A09890" }}>{count}</span>
+                : <>
+                    <span style={{ flex: 1 }}>{label}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "1px 8px", borderRadius: 20, background: activeTab === id ? "#B8922A" : "#F0EDE8", color: activeTab === id ? "#fff" : "#A09890" }}>
+                      {count}
+                    </span>
+                  </>
+              }
             </button>
           ))}
         </nav>
 
         {/* Bottom */}
-        <div style={{ marginTop: "auto", padding: "12px 10px", borderTop: "1px solid #E8E4DE", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ marginTop: "auto", padding: isMobile ? "10px 6px" : "12px 10px", borderTop: "1px solid #E8E4DE", display: "flex", flexDirection: "column", gap: 6 }}>
           {isAdmin && (
             <button onClick={() => setShowAddAdmin(true)}
-              onMouseEnter={e => { e.currentTarget.style.background = "#F5EDD8"; e.currentTarget.style.borderStyle = "solid"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderStyle = "dashed"; }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, border: "1px dashed #D4A93A", background: "transparent", color: "#B8922A", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, fontWeight: 500 }}>
-              <UserPlus size={13} /> Add Admin
+              onMouseEnter={e => { e.currentTarget.style.background = "#F5EDD8"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 8, padding: isMobile ? "8px 0" : "8px 12px", borderRadius: 10, border: "1px dashed #D4A93A", background: "transparent", color: "#B8922A", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, fontWeight: 500 }}>
+              <UserPlus size={isMobile ? 18 : 13} />
+              {!isMobile && "Add Admin"}
             </button>
           )}
-          <div style={{ padding: "8px 12px", borderRadius: 10, background: "#FAFAF9", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, fontWeight: 500, color: "#1C1A17", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {isAdmin ? auth?.username : "Student"}
-              </p>
-              <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#A09890", margin: 0, textTransform: "uppercase" }}>
-                {isAdmin ? "Admin" : "Guest"}
-              </p>
-            </div>
+          <div style={{ padding: isMobile ? "8px 0" : "8px 12px", borderRadius: 10, background: "#FAFAF9", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "space-between", gap: 8 }}>
+            {!isMobile && (
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, fontWeight: 500, color: "#1C1A17", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {isAdmin ? auth?.username : "Student"}
+                </p>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#A09890", margin: 0, textTransform: "uppercase" }}>
+                  {isAdmin ? "Admin" : "Guest"}
+                </p>
+              </div>
+            )}
             <button onClick={handleLogout} title="Sign out"
               style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #E8E4DE", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#A09890", flexShrink: 0 }}>
               <LogOut size={13} />
@@ -794,21 +808,23 @@ const Library = () => {
       <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "#FAFAF9" }}>
 
         {/* Topbar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 28px", background: "#fff", borderBottom: "1px solid #E8E4DE" }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 600, color: "#1C1A17", margin: 0, letterSpacing: "-0.01em" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "12px 12px" : "16px 28px", background: "#fff", borderBottom: "1px solid #E8E4DE" }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? 16 : 22, fontWeight: 600, color: "#1C1A17", margin: 0, letterSpacing: "-0.01em", flexShrink: 0 }}>
             {activeTab === "books" ? "Books" : activeTab === "audio" ? "Audio" : "Videos"}
           </h2>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "2px 9px", borderRadius: 20, background: "#F5EDD8", color: "#B8922A" }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "2px 9px", borderRadius: 20, background: "#F5EDD8", color: "#B8922A", flexShrink: 0 }}>
             {activeTab === "books" ? books.length : activeTab === "audio" ? filteredAudio.length : filteredVideos.length}
           </span>
 
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F7F5F2", border: "1px solid #E8E4DE", borderRadius: 10, padding: "9px 14px", width: 220 }}>
-              <Search size={14} color="#A09890" style={{ flexShrink: 0 }} />
-              <input type="text" placeholder={`Search ${activeTab}...`} value={search} onChange={e => setSearch(e.target.value)}
-                style={{ background: "transparent", border: "none", outline: "none", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#1C1A17", width: "100%" }} />
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+            {/* Search */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#F7F5F2", border: "1px solid #E8E4DE", borderRadius: 10, padding: "8px 10px", minWidth: 0, flex: 1, maxWidth: isMobile ? 140 : 220 }}>
+              <Search size={13} color="#A09890" style={{ flexShrink: 0 }} />
+              <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
+                style={{ background: "transparent", border: "none", outline: "none", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#1C1A17", width: "100%", minWidth: 0 }} />
             </div>
 
+            {/* Tag filter */}
             {activeTab === "books" && (
               <TagDropdown allTags={bookTagsList} selectedTags={selectedBookTags}
                 onToggle={tag => setSelectedBookTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
@@ -825,20 +841,21 @@ const Library = () => {
                 onClear={() => setSelectedAudioTags([])} />
             )}
 
+            {/* Upload button */}
             {isAdmin && (
               <button onClick={() => setShowUpload(true)}
                 onMouseEnter={e => e.currentTarget.style.background = "#F5EDD8"}
                 onMouseLeave={e => e.currentTarget.style.background = "#fff"}
-                style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", background: "#fff", border: "1.5px solid #B8922A", borderRadius: 10, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 500, color: "#B8922A", cursor: "pointer", transition: "background 0.15s", whiteSpace: "nowrap" }}>
+                style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 7, padding: isMobile ? "8px 10px" : "9px 16px", background: "#fff", border: "1.5px solid #B8922A", borderRadius: 10, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 500, color: "#B8922A", cursor: "pointer", transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}>
                 <Upload size={13} />
-                Upload {activeTab === "books" ? "Book" : activeTab === "audio" ? "Audio" : "Video"}
+                {!isMobile && ` Upload ${activeTab === "books" ? "Book" : activeTab === "audio" ? "Audio" : "Video"}`}
               </button>
             )}
           </div>
         </div>
 
         {/* Grid */}
-        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? 12 : 24 }}>
           {loading ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
               <Loader2 size={26} color="#B8922A" className="spin" />
@@ -846,7 +863,7 @@ const Library = () => {
           ) : activeTab === "books" ? (
             books.length === 0
               ? <EmptyState tab="books" onUpload={() => setShowUpload(true)} isAdmin={isAdmin} />
-              : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 16 }}>
+              : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: isMobile ? 10 : 16 }}>
                   {books.map(book => (
                     <BookCard key={book.uid} book={book} isAdmin={isAdmin}
                       onDelete={uid => setBooks(prev => prev.filter(b => b.uid !== uid))}
@@ -856,7 +873,7 @@ const Library = () => {
           ) : activeTab === "audio" ? (
             filteredAudio.length === 0
               ? <EmptyState tab="audio" onUpload={() => setShowUpload(true)} isAdmin={isAdmin} />
-              : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: isMobile ? 10 : 16 }}>
                   {filteredAudio.map(audio => (
                     <AudioCard key={audio.id} audio={audio} isAdmin={isAdmin}
                       onPlay={setCurrentlyPlayingAudio}
@@ -868,7 +885,7 @@ const Library = () => {
           ) : (
             filteredVideos.length === 0
               ? <EmptyState tab="videos" onUpload={() => setShowUpload(true)} isAdmin={isAdmin} />
-              : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: isMobile ? 10 : 16 }}>
                   {filteredVideos.map(video => (
                     <VideoCard key={video.id} video={video} isAdmin={isAdmin}
                       onPlay={setPlayingVideo}
