@@ -52,6 +52,7 @@ const ReadBook = () => {
     if (!pdfRef.current || loading) return
 
     const render = async () => {
+      // Cancel any in-progress render
       if (renderTaskRef.current) {
         await renderTaskRef.current.cancel().catch(() => {})
         renderTaskRef.current = null
@@ -60,29 +61,20 @@ const ReadBook = () => {
       setRendering(true)
       try {
         const page = await pdfRef.current.getPage(currentPage)
-
-        // Fit to screen width for mobile
-        const screenWidth = window.innerWidth - 32
-        const baseViewport = page.getViewport({ scale: 1 })
-        const fitScale = screenWidth / baseViewport.width
-        const finalScale = scale * fitScale
-
-        const viewport = page.getViewport({ scale: finalScale })
+        const viewport = page.getViewport({ scale })
         const canvas = canvasRef.current
         if (!canvas) return
 
         canvas.width = viewport.width
         canvas.height = viewport.height
-        canvas.style.width = viewport.width + 'px'
-        canvas.style.height = viewport.height + 'px'
-
         const ctx = canvas.getContext('2d')
+
         const task = page.render({ canvasContext: ctx, viewport })
         renderTaskRef.current = task
         await task.promise
       } catch (e) {
         if (e?.name !== 'RenderingCancelledException') {
-           setError(`Failed to render: ${e?.name} - ${e?.message}`)
+          setError('Failed to render page.')
         }
       } finally {
         renderTaskRef.current = null

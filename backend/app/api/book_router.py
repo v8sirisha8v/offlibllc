@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Iterator, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 
@@ -170,33 +170,70 @@ async def delete_book(
     return
 
 @router.get("/{book_uid}/read")
-def read_book(book_uid: str, db: Session = Depends(get_db)):
+def read_book(book_uid: str, request: Request, db: Session = Depends(get_db)):
     book = BookRepo(db).get_book_by_uid(book_uid)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
     if book.extension == "epub":
-        # Look for the converted PDF
         pdf_name = book.file_path.rsplit(".", 1)[0] + ".pdf"
         file_path = settings.UPLOAD_DIR / pdf_name
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail=f"Converted PDF not found — try re-uploading the EPUB")
+            raise HTTPException(status_code=404, detail="Converted PDF not found")
     else:
         file_path = settings.UPLOAD_DIR / book.file_path
 
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"File not found at {file_path}")
+        raise HTTPException(status_code=404, detail="File not found")
 
-    def iterfile():
+    file_size = file_path.stat().st_size
+    range_header = request.headers.get("Range")
+
+    if range_header:
+        # Parse "bytes=start-end"
+        range_val = range_header.replace("bytes=", "")
+        start_str, _, end_str = range_val.partition("-")
+        start = int(start_str)
+        end = int(end_str) if end_str else file_size - 1
+        end = min(end, file_size - 1)
+        length = end - start + 1
+
+        def iter_range():
+            with open(file_path, "rb") as f:
+                f.seek(start)
+                remaining = length
+                while remaining > 0:
+                    chunk = f.read(min(1024 * 256, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+
+        return StreamingResponse(
+            iter_range(),
+            status_code=206,
+            media_type="application/pdf",
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Content-Length": str(length),
+                "Accept-Ranges": "bytes",
+                "Content-Disposition": "inline",
+            }
+        )
+
+    def iter_full():
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024 * 1024):
+            while chunk := f.read(1024 * 256):
                 yield chunk
 
     return StreamingResponse(
-        iterfile(),
+        iter_full(),
         media_type="application/pdf",
-        headers={"Content-Disposition": "inline"}
+        headers={
+            "Content-Length": str(file_size),
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": "inline",
+        }
     )
-
 
 
