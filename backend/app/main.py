@@ -59,6 +59,11 @@ app.include_router(video_router.router)
 app.include_router(tag_router.router)
 app.include_router(audio_router.router)
 
+@app.get("/pdf.worker.min.mjs")
+async def serve_pdf_worker():
+    worker_file = FRONTEND_DIST / "pdf.worker.min.mjs"
+    return FileResponse(str(worker_file), media_type="application/javascript")
+
 if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 

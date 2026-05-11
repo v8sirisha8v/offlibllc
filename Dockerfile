@@ -6,6 +6,7 @@ RUN npm ci
 
 COPY frontend/ ./
 RUN npm run build
+RUN cp /frontend/public/pdf.worker.min.mjs /frontend/dist/pdf.worker.min.mjs
 
 # Build backend
 FROM python:3.11-slim
