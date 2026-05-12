@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, Loader2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import API_BASE from '../config'
 
@@ -23,16 +23,22 @@ const ReadBook = () => {
   const [scale, setScale] = useState(null)
   const [rendering, setRendering] = useState(false)
 
-  // Compute a scale that fills ~90% of the container width
+  // Portrait = fit to width (92%), Landscape/desktop = fit to height (92%)
   const computeFitScale = useCallback(async (pdf, pageNum) => {
     if (!containerRef.current) return 1.2
     const page = await pdf.getPage(pageNum)
     const baseViewport = page.getViewport({ scale: 1 })
-    const containerWidth = containerRef.current.clientWidth * 0.90
-    return parseFloat((containerWidth / baseViewport.width).toFixed(2))
+    const isPortrait = window.innerHeight > window.innerWidth
+
+    if (isPortrait) {
+      const containerWidth = containerRef.current.clientWidth * 0.92
+      return parseFloat((containerWidth / baseViewport.width).toFixed(2))
+    } else {
+      const availableHeight = containerRef.current.clientHeight * 0.92
+      return parseFloat((availableHeight / baseViewport.height).toFixed(2))
+    }
   }, [])
 
-  // Load the PDF once
   useEffect(() => {
     let cancelled = false
 
@@ -40,14 +46,11 @@ const ReadBook = () => {
       try {
         setLoading(true)
         setError(null)
-
         const pdf = await pdfjsLib.getDocument(`${API_BASE}/books/${uid}/read`).promise
         if (cancelled) return
-
         pdfRef.current = pdf
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
-
         const fitScale = await computeFitScale(pdf, 1)
         if (!cancelled) setScale(fitScale)
       } catch (e) {
@@ -61,7 +64,17 @@ const ReadBook = () => {
     return () => { cancelled = true }
   }, [uid, computeFitScale])
 
-  // Render whenever page or scale changes
+  // Recompute on resize / orientation change
+  useEffect(() => {
+    const handleResize = async () => {
+      if (!pdfRef.current) return
+      const fitScale = await computeFitScale(pdfRef.current, currentPage)
+      setScale(fitScale)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [computeFitScale, currentPage])
+
   useEffect(() => {
     if (!pdfRef.current || loading || scale === null) return
 
@@ -70,18 +83,15 @@ const ReadBook = () => {
         await renderTaskRef.current.cancel().catch(() => {})
         renderTaskRef.current = null
       }
-
       setRendering(true)
       try {
         const page = await pdfRef.current.getPage(currentPage)
         const viewport = page.getViewport({ scale })
         const canvas = canvasRef.current
         if (!canvas) return
-
         canvas.width = viewport.width
         canvas.height = viewport.height
         const ctx = canvas.getContext('2d')
-
         const task = page.render({ canvasContext: ctx, viewport })
         renderTaskRef.current = task
         await task.promise
@@ -107,7 +117,6 @@ const ReadBook = () => {
     setScale(s => Math.min(3, Math.max(0.5, parseFloat((s + dir * 0.2).toFixed(1)))))
   }
 
-  // Swipe handling
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -117,10 +126,9 @@ const ReadBook = () => {
     if (touchStartX.current === null) return
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
-    // Only treat as horizontal swipe if mostly horizontal
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-      if (dx < 0) goTo(currentPage + 1) // swipe left = next
-      else goTo(currentPage - 1)         // swipe right = prev
+      if (dx < 0) goTo(currentPage + 1)
+      else goTo(currentPage - 1)
     }
     touchStartX.current = null
     touchStartY.current = null
@@ -129,33 +137,18 @@ const ReadBook = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a1a', userSelect: 'none' }}>
 
-      {/* Toolbar */}
+      {/* Toolbar — zoom only */}
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: '#111', borderBottom: '1px solid #2a2a2a' }}>
         <button onClick={() => navigate(-1)}
           style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontFamily: 'monospace' }}>
           <ArrowLeft size={14} /> Back
         </button>
-
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Zoom */}
-          <button onClick={() => zoom(-1)} disabled={scale <= 0.5}
-            style={btnStyle}><ZoomOut size={15} /></button>
+          <button onClick={() => zoom(-1)} disabled={!scale || scale <= 0.5} style={btnStyle}><ZoomOut size={15} /></button>
           <span style={{ color: '#888', fontSize: 12, fontFamily: 'monospace', minWidth: 36, textAlign: 'center' }}>
             {scale ? `${Math.round(scale * 100)}%` : '—'}
           </span>
-          <button onClick={() => zoom(1)} disabled={scale >= 3}
-            style={btnStyle}><ZoomIn size={15} /></button>
-
-          <div style={{ width: 1, height: 20, background: '#2a2a2a', margin: '0 4px' }} />
-
-          {/* Pagination */}
-          <button onClick={() => goTo(currentPage - 1)} disabled={currentPage <= 1 || rendering}
-            style={btnStyle}><ChevronLeft size={15} /></button>
-          <span style={{ color: '#888', fontSize: 12, fontFamily: 'monospace', minWidth: 64, textAlign: 'center' }}>
-            {totalPages ? `${currentPage} / ${totalPages}` : '—'}
-          </span>
-          <button onClick={() => goTo(currentPage + 1)} disabled={currentPage >= totalPages || rendering}
-            style={btnStyle}><ChevronRight size={15} /></button>
+          <button onClick={() => zoom(1)} disabled={!scale || scale >= 3} style={btnStyle}><ZoomIn size={15} /></button>
         </div>
       </div>
 
@@ -172,11 +165,9 @@ const ReadBook = () => {
             <span style={{ fontFamily: 'monospace', fontSize: 13 }}>Loading book…</span>
           </div>
         )}
-
         {error && (
           <div style={{ color: '#e06c75', fontFamily: 'monospace', fontSize: 13, marginTop: 80 }}>{error}</div>
         )}
-
         {!loading && !error && (
           <div style={{ position: 'relative' }}>
             {rendering && (
@@ -189,12 +180,14 @@ const ReadBook = () => {
         )}
       </div>
 
-      {/* Bottom page bar (tap-friendly on mobile) */}
-      {totalPages > 1 && (
+      {/* Bottom bar — arrows + page number */}
+      {totalPages > 0 && (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '12px 0', background: '#111', borderTop: '1px solid #2a2a2a' }}>
           <button onClick={() => goTo(currentPage - 1)} disabled={currentPage <= 1 || rendering}
             style={{ ...btnStyle, width: 44, height: 44, borderRadius: 10 }}><ChevronLeft size={18} /></button>
-          <span style={{ color: '#666', fontFamily: 'monospace', fontSize: 13 }}>{currentPage} / {totalPages}</span>
+          <span style={{ color: '#666', fontFamily: 'monospace', fontSize: 13 }}>
+            {totalPages ? `${currentPage} / ${totalPages}` : '—'}
+          </span>
           <button onClick={() => goTo(currentPage + 1)} disabled={currentPage >= totalPages || rendering}
             style={{ ...btnStyle, width: 44, height: 44, borderRadius: 10 }}><ChevronRight size={18} /></button>
         </div>
