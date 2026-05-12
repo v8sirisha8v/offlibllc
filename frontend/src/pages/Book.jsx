@@ -36,8 +36,9 @@ const ReadBook = () => {
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
       } catch (e) {
-        if (!cancelled) setError('Failed to load book. Try again.')
-      } finally {
+  if (!cancelled) setError(`Failed to load book: ${e?.message || e?.name || 'Unknown error'}`)
+    }     
+  finally {
         if (!cancelled) setLoading(false)
       }
     }
@@ -73,10 +74,10 @@ const ReadBook = () => {
         renderTaskRef.current = task
         await task.promise
       } catch (e) {
-        if (e?.name !== 'RenderingCancelledException') {
-          setError('Failed to render page.')
-        }
-      } finally {
+      if (e?.name !== 'RenderingCancelledException') {
+        setError(`Failed to render page: ${e?.message || e?.name || 'Unknown error'}`)
+      }
+    } finally {
         renderTaskRef.current = null
         setRendering(false)
       }
