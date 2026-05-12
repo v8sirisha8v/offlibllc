@@ -15,7 +15,7 @@
     "@fontsource/playfair-display": "^5.2.8",
     "bootstrap": "^5.3.8",
     "lucide-react": "^0.552.0",
-    "pdfjs-dist": "^4.4.168",
+    "pdfjs-dist": "^3.11.174",
     "react": "^19.1.1",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.1",
