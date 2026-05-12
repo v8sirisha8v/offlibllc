@@ -421,24 +421,19 @@ const BookCard = ({ book, onDelete, onEdit, isAdmin }) => {
             {book.extension}
           </span>
         </div>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(28,26,23,0.65) 0%, transparent 55%)", opacity: hovered ? 1 : 0, transition: "opacity 0.2s ease", display: "flex", alignItems: "flex-end", padding: 10, gap: 6, justifyContent: "flex-end" }}>
-          <button onClick={(e) => { e.stopPropagation(); navigate(`/read/${book.uid}`); }}
-            style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.95)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#B8922A" }}>
-            <Eye size={14} />
-          </button>
+        <div onClick={() => navigate(`/read/${book.uid}`)} style={{ position: "absolute", inset: 0, cursor: "pointer" }} />
           {isAdmin && (
-            <>
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(28,26,23,0.65) 0%, transparent 55%)", opacity: hovered ? 1 : 0, transition: "opacity 0.2s ease", display: "flex", alignItems: "flex-end", padding: 10, gap: 6, justifyContent: "flex-end", pointerEvents: "none" }}>
               <button onClick={(e) => { e.stopPropagation(); onEdit(book); }}
-                style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.95)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B6560" }}>
+                style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.95)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B6560", pointerEvents: "auto" }}>
                 <Pencil size={14} />
               </button>
-              <button onClick={handleDelete} disabled={deleting}
-                style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.95)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#D94F3D", opacity: deleting ? 0.4 : 1 }}>
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(e); }} disabled={deleting}
+                style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.95)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#D94F3D", opacity: deleting ? 0.4 : 1, pointerEvents: "auto" }}>
                 {deleting ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
               </button>
-            </>
+            </div>
           )}
-        </div>
       </div>
       <div style={{ padding: "12px 13px", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ fontFamily: "'Satoshi', sans-serif", fontSize: 13, fontWeight: 500, color: "#1C1A17", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
