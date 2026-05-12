@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import API_BASE from '../config'
@@ -10,15 +10,27 @@ const ReadBook = () => {
   const { uid } = useParams()
   const navigate = useNavigate()
   const canvasRef = useRef(null)
+  const containerRef = useRef(null)
   const pdfRef = useRef(null)
   const renderTaskRef = useRef(null)
+  const touchStartX = useRef(null)
+  const touchStartY = useRef(null)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
-  const [scale, setScale] = useState(1.2)
+  const [scale, setScale] = useState(null)
   const [rendering, setRendering] = useState(false)
+
+  // Compute a scale that fills ~90% of the container width
+  const computeFitScale = useCallback(async (pdf, pageNum) => {
+    if (!containerRef.current) return 1.2
+    const page = await pdf.getPage(pageNum)
+    const baseViewport = page.getViewport({ scale: 1 })
+    const containerWidth = containerRef.current.clientWidth * 0.90
+    return parseFloat((containerWidth / baseViewport.width).toFixed(2))
+  }, [])
 
   // Load the PDF once
   useEffect(() => {
@@ -35,25 +47,25 @@ const ReadBook = () => {
         pdfRef.current = pdf
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
+
+        const fitScale = await computeFitScale(pdf, 1)
+        if (!cancelled) setScale(fitScale)
       } catch (e) {
-  if (!cancelled) setError(`Failed to load book: ${e?.message || e?.name || 'Unknown error'}`)
-    }     
-  finally {
+        if (!cancelled) setError(`Failed to load book: ${e?.message || e?.name || 'Unknown error'}`)
+      } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
     load()
     return () => { cancelled = true }
-  }, [uid])
+  }, [uid, computeFitScale])
 
-  
   // Render whenever page or scale changes
   useEffect(() => {
-    if (!pdfRef.current || loading) return
+    if (!pdfRef.current || loading || scale === null) return
 
     const render = async () => {
-      // Cancel any in-progress render
       if (renderTaskRef.current) {
         await renderTaskRef.current.cancel().catch(() => {})
         renderTaskRef.current = null
@@ -74,10 +86,10 @@ const ReadBook = () => {
         renderTaskRef.current = task
         await task.promise
       } catch (e) {
-      if (e?.name !== 'RenderingCancelledException') {
-        setError(`Failed to render page: ${e?.message || e?.name || 'Unknown error'}`)
-      }
-    } finally {
+        if (e?.name !== 'RenderingCancelledException') {
+          setError(`Failed to render page: ${e?.message || e?.name || 'Unknown error'}`)
+        }
+      } finally {
         renderTaskRef.current = null
         setRendering(false)
       }
@@ -95,6 +107,25 @@ const ReadBook = () => {
     setScale(s => Math.min(3, Math.max(0.5, parseFloat((s + dir * 0.2).toFixed(1)))))
   }
 
+  // Swipe handling
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // Only treat as horizontal swipe if mostly horizontal
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      if (dx < 0) goTo(currentPage + 1) // swipe left = next
+      else goTo(currentPage - 1)         // swipe right = prev
+    }
+    touchStartX.current = null
+    touchStartY.current = null
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a1a', userSelect: 'none' }}>
 
@@ -110,7 +141,7 @@ const ReadBook = () => {
           <button onClick={() => zoom(-1)} disabled={scale <= 0.5}
             style={btnStyle}><ZoomOut size={15} /></button>
           <span style={{ color: '#888', fontSize: 12, fontFamily: 'monospace', minWidth: 36, textAlign: 'center' }}>
-            {Math.round(scale * 100)}%
+            {scale ? `${Math.round(scale * 100)}%` : '—'}
           </span>
           <button onClick={() => zoom(1)} disabled={scale >= 3}
             style={btnStyle}><ZoomIn size={15} /></button>
@@ -129,7 +160,12 @@ const ReadBook = () => {
       </div>
 
       {/* Canvas area */}
-      <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px' }}>
+      <div
+        ref={containerRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px 8px' }}
+      >
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#666', marginTop: 80 }}>
             <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
@@ -174,6 +210,5 @@ const btnStyle = {
   width: 32, height: 32, background: '#222', border: '1px solid #333',
   borderRadius: 8, color: '#aaa', cursor: 'pointer',
 }
-btnStyle[':disabled'] = { opacity: 0.35, cursor: 'not-allowed' }
 
 export default ReadBook
